@@ -1,2 +1,4 @@
 # Smart Library System - Simple ORM Version
 sqlalchemy==2.0.23
+# faker 5.0.0 only supports Python 3.8 and above
+faker==5.0.0

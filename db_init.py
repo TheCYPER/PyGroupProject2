@@ -3,9 +3,9 @@ Database initialization for Smart Library System.
 Simple ORM setup using SQLAlchemy.
 """
 
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
 # Create base class for all models
@@ -17,6 +17,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db():
     """Initialize database tables."""
+    Base.metadata.drop_all(engine) # restart everytime
     Base.metadata.create_all(bind=engine)
     print("Database initialized successfully!")
 
