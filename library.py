@@ -38,6 +38,19 @@ class Library:
         finally:
             close_session(session)
     
+    def naive_search_books(self, keyword: str) -> list[dict]:
+        """linear search using for loop"""
+        session = get_session()
+        try:
+            results = []
+            books = session.query(Book).all()
+            for book in books:
+                if (keyword in book.title) or (keyword in book.author) or (keyword in book.genre):
+                    results.append(book.to_dict())
+            return results
+        finally:
+            close_session(session)
+
     def search_books(self, keyword: str) -> list[dict]:
         """Search books by keyword."""
         session = get_session()
