@@ -4,8 +4,9 @@ Simple interface for library operations.
 """
 
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, desc
+from sqlalchemy import or_, desc, func
 from datetime import datetime
+from collections import Counter
 from db_init import get_session, close_session
 from models.book import Book
 from models.user import User
@@ -165,6 +166,129 @@ class Library:
                 'total_books': total_books,
                 'total_users': total_users,
                 'average_rating': round(avg_rating, 2)
+            }
+        finally:
+            close_session(session)
+    
+    def get_user_preferred_genres(self, user_id: int) -> dict:
+        """Get user's preferred genres based on borrowing history."""
+        session = get_session()
+        try:
+            borrowed_books = session.query(Book).join(Borrowing).filter(
+                Borrowing.user_id == user_id
+            ).all()
+            
+            if not borrowed_books:
+                return {}
+            genre_counts = Counter(book.genre for book in borrowed_books)
+            total_borrowed = len(borrowed_books)
+            genre_preferences = {
+                genre: round(count / total_borrowed * 100, 1)
+                for genre, count in genre_counts.items()
+            }
+            
+            return genre_preferences
+        finally:
+            close_session(session)
+    
+    def recommend_books(self, user_id: int, limit: int = 5) -> list[dict]:
+        """Recommend books based on user's borrowing history."""
+        session = get_session()
+        try:
+            # Get user's preferred genres
+            genre_preferences = self.get_user_preferred_genres(user_id)
+            
+            if not genre_preferences:
+                # If user has no borrowing history, recommend top-rated books
+                books = session.query(Book).order_by(desc(Book.rating)).limit(limit).all()
+                result = []
+                for book in books:
+                    book_dict = book.to_dict()
+                    book_dict['recommendation_reason'] = "Top-rated book (no borrowing history)"
+                    result.append(book_dict)
+                return result
+            
+            # Get books user has already borrowed (to avoid recommending them again)
+            borrowed_book_ids = session.query(Borrowing.book_id).filter(
+                Borrowing.user_id == user_id
+            ).all()
+            borrowed_book_ids = [bid[0] for bid in borrowed_book_ids]
+            
+            recommended_books = []
+            sorted_genres = sorted(genre_preferences.items(), key=lambda x: x[1], reverse=True)
+            
+            for genre, preference in sorted_genres:
+                # Get books from this genre that user hasn't borrowed
+                genre_books = session.query(Book).filter(
+                    Book.genre == genre,
+                    ~Book.id.in_(borrowed_book_ids)
+                ).order_by(desc(Book.rating)).limit(limit).all()
+                
+                recommended_books.extend(genre_books)
+                
+                if len(recommended_books) >= limit:
+                    break
+            
+            # If we still need more recommendations, add top-rated books from other genres
+            if len(recommended_books) < limit:
+                remaining_limit = limit - len(recommended_books)
+                additional_books = session.query(Book).filter(
+                    ~Book.id.in_(borrowed_book_ids + [book.id for book in recommended_books])
+                ).order_by(desc(Book.rating)).limit(remaining_limit).all()
+                
+                recommended_books.extend(additional_books)
+            
+            # Add recommendation reason to each book
+            result = []
+            for book in recommended_books[:limit]:
+                book_dict = book.to_dict()
+                book_genre_preference = genre_preferences.get(book.genre, 0)
+                if book_genre_preference > 0:
+                    book_dict['recommendation_reason'] = f"You've borrowed {book_genre_preference}% {book.genre} books"
+                else:
+                    book_dict['recommendation_reason'] = "Top-rated book"
+                result.append(book_dict)
+            
+            return result
+        finally:
+            close_session(session)
+    
+    def get_user_reading_profile(self, user_id: int) -> dict:
+        """Get comprehensive reading profile for a user."""
+        session = get_session()
+        try:
+            # user info
+            user = session.query(User).filter(User.id == user_id).first()
+            if not user:
+                return {}
+            
+            # borrowing statistics
+            total_borrowed = session.query(Borrowing).filter(Borrowing.user_id == user_id).count()
+            currently_borrowed = session.query(Borrowing).filter(
+                Borrowing.user_id == user_id,
+                Borrowing.returned_at.is_(None)
+            ).count()
+            
+            # genre preferences
+            genre_preferences = self.get_user_preferred_genres(user_id)
+            
+            # favorite authors
+            borrowed_books = session.query(Book).join(Borrowing).filter(
+                Borrowing.user_id == user_id
+            ).all()
+            
+            author_counts = Counter(book.author for book in borrowed_books)
+            favorite_authors = dict(author_counts.most_common(3))
+            
+            return {
+                'user': user.to_dict(),
+                'total_books_borrowed': total_borrowed,
+                'currently_borrowed': currently_borrowed,
+                'genre_preferences': genre_preferences,
+                'favorite_authors': favorite_authors,
+                'most_recent_borrowings': [
+                    book.to_dict() for book in borrowed_books[-3:]  # Last 3 books
+                ]
             }
         finally:
             close_session(session)
