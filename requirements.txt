@@ -2,3 +2,6 @@
 sqlalchemy==2.0.23
 # faker 5.0.0 only supports Python 3.8 and above
 faker==5.0.0
+numpy==2.2.6
+pandas==2.3.3
+matplotlib==3.10.7

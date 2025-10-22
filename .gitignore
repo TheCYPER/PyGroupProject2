@@ -2,3 +2,6 @@ __pycache__/
 .vscode/
 *.db
 *.json
+*.out
+*.csv
+*.png
