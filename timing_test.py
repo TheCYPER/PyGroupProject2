@@ -84,37 +84,6 @@ def timing_test():
     avg_speedup = statistics.mean(speedups)
     print(f"\nAverage speedup: {avg_speedup:.2f}x")
     print(f"Speedup range: {min(speedups):.2f}x - {max(speedups):.2f}x")
-    
-    # Test with different dataset sizes
-    print(f"\n=== Scalability Test ===")
-    
-    # Test with subset of data
-    test_sizes = [100, 500, 1000]
-    keyword = "Science"
-    
-    for size in test_sizes:
-        # Create subset
-        session = get_session()
-        subset_books = session.query(Book).limit(size).all()
-        session.close()
-        
-        # Test naive search on subset
-        start_time = time.time()
-        naive_count = 0
-        for book in subset_books:
-            if keyword in book.title or keyword in book.author or keyword in book.genre:
-                naive_count += 1
-        naive_time = time.time() - start_time
-        
-        # Test advanced search on subset
-        start_time = time.time()
-        advanced_results = library.search_books(keyword)
-        advanced_time = time.time() - start_time
-        
-        print(f"Dataset size: {size}")
-        print(f"  Naive search: {naive_count} results in {naive_time:.4f} seconds")
-        print(f"  Advanced search: {len(advanced_results)} results in {advanced_time:.4f} seconds")
-        print(f"  Speedup: {naive_time/advanced_time:.2f}x faster\n")
 
 if __name__ == "__main__":
     timing_test()

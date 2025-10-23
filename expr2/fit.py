@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-csv_path = "./results_nv.csv"
+csv_path = "./results_ad.csv"
 
 # Read the CSV file
 df = pd.read_csv(csv_path)
@@ -41,7 +41,7 @@ plt.legend(fontsize=11)
 
 # Save the plot
 plt.tight_layout()
-plt.savefig('./linear_fit_nv.png', dpi=300, bbox_inches='tight')
+plt.savefig('./linear_fit_ad2.png', dpi=300, bbox_inches='tight')
 print("\nVisualization saved!")
 
 # Calculate fit quality (R-squared)
@@ -51,4 +51,4 @@ ss_res = np.sum(residuals**2)
 ss_tot = np.sum((y - np.mean(y))**2)
 r_squared = 1 - (ss_res / ss_tot)
 
-print(f"\nFit Quality (R²) of naive search: {r_squared:.8f}")
+print(f"\nFit Quality (R²) of advanced search: {r_squared:.8f}")

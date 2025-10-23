@@ -23,5 +23,7 @@ plt.legend()
 
 # Save the plot
 plt.tight_layout()
-plt.savefig('./timing_visualization_ad.png', dpi=300, bbox_inches='tight')
+plt.savefig('./timing_visualization.png', dpi=300, bbox_inches='tight')
 print("Visualization saved!")
+
+print(df.describe())
